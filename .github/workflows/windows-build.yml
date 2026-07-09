@@ -24,8 +24,26 @@ jobs:
      - name: Restore NuGet packages
        run: .\nuget.exe restore WebViewBrowserApp.sln
 
-     - name: Build Release x64
-       run: msbuild WebViewBrowserApp.sln /p:Configuration=Release /p:Platform=x64 /m
+     - name: Find MSBuild and Build Release x64
+       shell: pwsh
+       run: |
+        $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+        if (-not (Test-Path $vswhere)) {
+        Write-Error "vswhere not found at $vswhere"
+        exit 1
+        }
+        $installPath = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+        if (-not $installPath) {
+        Write-Error "No VS installation with MSBuild component found."
+        exit 1
+        }
+        $msbuildPath = Join-Path $installPath 'MSBuild\Current\Bin\MSBuild.exe'
+        if (-not (Test-Path $msbuildPath)) {
+        Write-Error "MSBuild.exe not found at $msbuildPath"
+        exit 1
+        }
+        Write-Host "Using MSBuild: $msbuildPath"
+        & $msbuildPath WebViewBrowserApp.sln /p:Configuration=Release /p:Platform=x64 /m
 
      - name: Upload Release artifact
        uses: actions/upload-artifact@v4
