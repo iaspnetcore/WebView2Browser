@@ -16,11 +16,19 @@ jobs:
        shell: pwsh
        run: |
         $nuget = Join-Path $env:GITHUB_WORKSPACE 'nuget.exe'
-          if (-not (Test-Path $nuget)) {
-            Invoke-WebRequest -UseBasicParsing -Uri 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe' -OutFile $nuget
-          }
-          & $nuget restore WebViewBrowserApp.sln
-
+        if (-not (Test-Path $nuget)) {
+        Invoke-WebRequest -UseBasicParsing -Uri 'https://dist.nuget.org/win-x86-commandline/latest/nuget.exe' -OutFile $nuget
+        }
+        & $nuget restore WebViewBrowserApp.sln -PackagesDirectory packages -Verbosity detailed
+        Write-Host "=== packages directory listing ==="
+        Get-ChildItem -Path packages -Recurse -Force | Select-Object FullName -First 200 | ForEach-Object { Write-Host $_.FullName }
+        Write-Host "=== check for WIL header ==="
+        if (Test-Path 'packages\Microsoft.Windows.ImplementationLibrary.*') {
+        Get-ChildItem -Path packages\Microsoft.Windows.ImplementationLibrary.* -Recurse -Force | Select-String -Pattern 'wil/result.h' -List -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.Path }
+        } else {
+        Write-Host "Microsoft.Windows.ImplementationLibrary package not found in packages/"
+        }
+        
      - name: Restore NuGet packages
        run: .\nuget.exe restore WebViewBrowserApp.sln
 
