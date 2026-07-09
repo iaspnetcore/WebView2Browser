@@ -1,0 +1,22 @@
+steps:
+  - uses: actions/checkout@v4
+
+  - name: Ensure nuget.exe
+    shell: pwsh
+    run: |
+      if (-not (Get-Command nuget.exe -ErrorAction SilentlyContinue)) {
+        Invoke-WebRequest -UseBasicParsing -Uri https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
+        $env:PATH = "$PWD;$env:PATH"
+      }
+
+  - name: Restore NuGet packages
+    run: .\nuget.exe restore WebViewBrowserApp.sln
+
+  - name: Build Release x64
+    run: msbuild WebViewBrowserApp.sln /p:Configuration=Release /p:Platform=x64 /m
+
+  - name: Upload Release artifact
+    uses: actions/upload-artifact@v4
+    with:
+      name: WebView2Browser-Release-x64
+      path: Release_x64/*.exe
